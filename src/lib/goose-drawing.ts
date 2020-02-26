@@ -1,5 +1,5 @@
 import { GOOSE_IMAGE } from '../assets/goose-image';
-import { GooseHead } from './gooe-heads';
+import { GooseHead } from './goose-heads';
 import { GooseBody } from './goose-bodies';
 
 export namespace GooseDrawing {

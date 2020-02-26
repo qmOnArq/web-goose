@@ -1,14 +1,17 @@
 import { GooseDrawing } from './goose-drawing';
-import { getHeads } from './gooe-heads';
+import { getHeads } from './goose-heads';
 import { getBodies } from './goose-bodies';
 
-export class WebGoose {
+export class Testing {
     init() {
         const canvas = document.createElement('canvas');
         document.body.appendChild(canvas);
         canvas.width = 1600;
         canvas.height = 1500;
         canvas.style.background = 'black';
+        canvas.style.position = 'absolute';
+        canvas.style.left = '5px';
+        canvas.style.top = '5px';
 
         const ctx = canvas.getContext('2d')!;
         ctx.imageSmoothingEnabled = false;

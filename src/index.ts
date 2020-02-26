@@ -1,6 +1,6 @@
-import { WebGoose } from './lib/web-goose';
 import { GOOSE_IMAGE_PROMISE } from './assets/goose-image';
+import { Goose } from './lib/goose';
 
 GOOSE_IMAGE_PROMISE.then(() => {
-    new WebGoose().init();
+    new Goose().init();
 });
