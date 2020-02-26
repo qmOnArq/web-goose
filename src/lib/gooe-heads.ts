@@ -43,5 +43,12 @@ export function getHeads() {
     heads[11].anchorX = 0;
     heads[11].anchorY = 4;
 
+    heads[6].type = 'side';
+    heads[7].type = 'side';
+    heads[8].type = 'side';
+    heads[9].type = 'side';
+    heads[10].type = 'side';
+    heads[11].type = 'side';
+
     return heads;
 }
