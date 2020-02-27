@@ -2,6 +2,8 @@ import { GooseDrawing } from './goose-drawing';
 import { getHeads } from './goose-heads';
 import { getBodies } from './goose-bodies';
 import { Helpers } from './helpers';
+import { GOOSE_IMAGE_PROMISE } from '../assets/goose-image';
+import { MEME_IMAGE_PROMISE } from '../assets/meme-images';
 
 export class Goose {
     private readonly canvasWidth = 50;
@@ -27,7 +29,7 @@ export class Goose {
     };
 
     private target = {
-        action: 'stand' as 'stand' | 'walk' | 'run' | 'followMouse' | 'goForPresent' | 'bringPresent',
+        action: 'stand' as 'stand' | 'moveTo' | 'followMouse' | 'goForPresent' | 'bringPresent',
         position: { x: 0, y: 0 },
         time: 0,
     };
@@ -36,10 +38,16 @@ export class Goose {
 
     private mousePosition = { x: 0, y: 0 };
 
-    init(debug = false) {
+    start(debug = false) {
+        Promise.all([GOOSE_IMAGE_PROMISE, ...MEME_IMAGE_PROMISE]).then(() => {
+            this.init(debug);
+        });
+    }
+
+    private init(debug: boolean) {
         document.addEventListener('mousemove', (e: MouseEvent) => {
-            this.mousePosition.x = e.clientX;
-            this.mousePosition.y = e.clientY;
+            this.mousePosition.x = e.pageX;
+            this.mousePosition.y = e.pageY;
         });
 
         this.canvas = document.createElement('canvas');
@@ -82,34 +90,46 @@ export class Goose {
         }
 
         if (this.target.action === 'followMouse') {
-            const distance = Helpers.distance(
-                this.position.x,
-                this.position.y,
-                this.mousePosition.x,
-                this.mousePosition.y,
-            );
-
-            let speed = 0;
-
-            if (distance > 250) {
-                this.body.state = 'running';
-                speed = this.runSpeed;
-            } else if (distance > 25) {
-                this.body.state = 'walking';
-                speed = this.walkSpeed;
-            } else {
-                this.body.state = 'standing';
-            }
-
-            this.position = Helpers.moveTowards(
-                this.position.x,
-                this.position.y,
-                this.mousePosition.x,
-                this.mousePosition.y,
-                speed * delta,
-            );
-            this.mirrored = this.mousePosition.x < this.position.x;
+            this.target.position = this.mousePosition;
         }
+
+        const distance = Helpers.distance(
+            this.position.x,
+            this.position.y,
+            this.target.position.x,
+            this.target.position.y,
+        );
+
+        let speed = 0;
+
+        if (distance > 250) {
+            this.body.state = 'running';
+            speed = this.runSpeed;
+        } else if (distance > 25) {
+            this.body.state = 'walking';
+            speed = this.walkSpeed;
+        } else {
+            this.body.state = 'standing';
+        }
+
+        this.position = Helpers.moveTowards(
+            this.position.x,
+            this.position.y,
+            this.target.position.x,
+            this.target.position.y,
+            speed * delta,
+        );
+        this.position.x = Helpers.clamp(
+            this.position.x,
+            -this.canvas.width - 20,
+            document.body.clientWidth + this.canvas.width + 20,
+        );
+        this.position.y = Helpers.clamp(
+            this.position.y,
+            -this.canvas.height - 20,
+            document.body.clientHeight + this.canvas.height + 20,
+        );
+        this.mirrored = this.position.x > this.target.position.x;
     }
 
     private draw() {

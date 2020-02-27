@@ -12,4 +12,8 @@ export namespace Helpers {
     export function distance(x1: number, y1: number, x2: number, y2: number) {
         return Math.abs(Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)));
     }
+
+    export function clamp(value: number, min: number, max: number) {
+        return Math.min(max, Math.max(min, value));
+    }
 }
