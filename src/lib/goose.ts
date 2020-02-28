@@ -4,6 +4,8 @@ import { getBodies } from './goose-bodies';
 import { Helpers } from './helpers';
 import { GOOSE_IMAGE_PROMISE } from '../assets/goose-image';
 import { MEME_IMAGE_PROMISE } from '../assets/meme-images';
+import { injectStyles } from '../styles/inject-styles';
+import { createWinXpWindow } from '../assets/windows-xp-window';
 
 export class Goose {
     private readonly canvasWidth = 50;
@@ -39,6 +41,8 @@ export class Goose {
     private mousePosition = { x: 0, y: 0 };
 
     start(debug = false) {
+        injectStyles();
+        createWinXpWindow();
         Promise.all([GOOSE_IMAGE_PROMISE, ...MEME_IMAGE_PROMISE]).then(() => {
             this.init(debug);
         });

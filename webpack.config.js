@@ -18,6 +18,10 @@ module.exports = ({ mode } = { mode: 'production', presets: [] }) => {
                         use: 'ts-loader',
                         exclude: /node_modules/,
                     },
+                    {
+                        test: /\.css$/,
+                        use: ['to-string-loader', 'css-loader'],
+                    },
                 ],
             },
             resolve: {
