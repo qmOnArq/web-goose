@@ -3,9 +3,10 @@ import { getHeads } from './goose-heads';
 import { getBodies } from './goose-bodies';
 import { Helpers } from './helpers';
 import { GOOSE_IMAGE_PROMISE } from '../assets/goose-image';
-import { MEME_IMAGE_PROMISE } from '../assets/meme-images';
-import { injectStyles } from '../styles/inject-styles';
-import { createWinXpWindow } from '../assets/windows-xp-window';
+import { MEME_IMAGE_PROMISE, MEME_IMAGE_STR } from '../assets/meme-images';
+import { createWinXpWindow } from '../windows-window/window-maker';
+import { MEME_TEXTS } from '../assets/meme-texts';
+import { windowsInjectStyles } from '../windows-window/windows-inject-styles';
 
 export class Goose {
     private readonly canvasWidth = 50;
@@ -41,10 +42,11 @@ export class Goose {
     private mousePosition = { x: 0, y: 0 };
 
     start(debug = false) {
-        injectStyles();
-        createWinXpWindow();
+        windowsInjectStyles();
         Promise.all([GOOSE_IMAGE_PROMISE, ...MEME_IMAGE_PROMISE]).then(() => {
             this.init(debug);
+            createWinXpWindow('text', MEME_TEXTS[1].text, 500, 100, true, true);
+            createWinXpWindow('image', MEME_IMAGE_STR[0], 100, 100, true, true);
         });
     }
 
@@ -59,6 +61,7 @@ export class Goose {
         this.canvas.height = this.canvasHeight * this.scale;
         this.canvas.style.background = debug ? '#00393b' : 'transparent';
         this.canvas.style.position = 'absolute';
+        this.canvas.style.zIndex = '999999';
         this.canvas.oncontextmenu = e => {
             e.preventDefault();
         };
