@@ -97,6 +97,7 @@
 .__web-goose-xp-content-wrapper__ img {
     max-width: 100%;
     height: auto;
+    pointer-events: none;
 }
 
 .__web-goose-xp-minimize__:hover {

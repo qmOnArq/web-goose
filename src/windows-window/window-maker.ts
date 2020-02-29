@@ -90,10 +90,35 @@ export function createWinXpWindow(
     dom.style.left = `${left}px`;
     dom.style.top = `${top}px`;
 
-    const close = dom.querySelector('.__web-goose-xp-close__')!;
-    close.addEventListener('click', () => {
-        dom.remove();
+    const closed = new Promise<void>(resolve => {
+        const close = dom.querySelector('.__web-goose-xp-close__')!;
+        close.addEventListener('click', () => {
+            dom.remove();
+            resolve();
+        });
     });
 
-    return dom;
+    const result: WindowsXpWindow = {
+        node: dom,
+        left,
+        top,
+        closed,
+        type,
+        content,
+        width: rect.width,
+        height: rect.height + 30,
+    };
+
+    return result;
+}
+
+export interface WindowsXpWindow {
+    node: HTMLElement;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    type: 'image' | 'text';
+    content: string;
+    closed: Promise<void>;
 }

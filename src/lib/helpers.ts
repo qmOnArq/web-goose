@@ -16,4 +16,8 @@ export namespace Helpers {
     export function clamp(value: number, min: number, max: number) {
         return Math.min(max, Math.max(min, value));
     }
+
+    export function randomItem<T>(array: T[] | ReadonlyArray<T>) {
+        return array[Math.floor(Math.random() * array.length)];
+    }
 }
