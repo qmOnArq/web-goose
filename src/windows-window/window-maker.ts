@@ -88,7 +88,7 @@ export function createWinXpWindow(
     }
 
     dom.style.left = `${left}px`;
-    dom.style.top = `${top}px`;
+    dom.style.top = `${top - document.documentElement.scrollTop}px`;
 
     const closed = new Promise<void>(resolve => {
         const close = dom.querySelector('.__web-goose-xp-close__')!;

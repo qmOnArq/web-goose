@@ -9,7 +9,7 @@
 
 .__web-goose-xp-holder__ {
     background-color: #FFF;
-    position: absolute;
+    position: fixed;
     touch-action: none;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;

@@ -20,4 +20,25 @@ export namespace Helpers {
     export function randomItem<T>(array: T[] | ReadonlyArray<T>) {
         return array[Math.floor(Math.random() * array.length)];
     }
+
+    export function getViewportWithPadding(padding = 0) {
+        return {
+            top: window.pageYOffset + padding,
+            left: window.pageXOffset + padding,
+            height: window.innerHeight - padding * 2,
+            width: window.innerWidth - padding * 2,
+        };
+    }
+
+    export function isPointInRect(
+        x: number,
+        y: number,
+        rect: { top: number; left: number; height: number; width: number },
+    ) {
+        return x >= rect.left && y >= rect.top && x <= rect.left + rect.width && y <= rect.top + rect.height;
+    }
+
+    export function isPointInViewportWithPadding(x: number, y: number, padding = 0) {
+        return isPointInRect(x, y, getViewportWithPadding(padding));
+    }
 }

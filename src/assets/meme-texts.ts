@@ -1,24 +1,24 @@
 export const MEME_TEXTS = [
     {
         title: 'am goose',
-        text: 'am goose hjonk',
+        text: '\n  am goose hjonk',
     }, {
         title: 'good work',
-        text: 'good work',
+        text: '\n  good work',
     },{
         title: 'gooseASCII1',
-        text: '  >o) \n' +
+        text: '\n  >o) \n' +
             '   (_>',
     },{
         title: 'hard to type',
-        text: 'asdas       sorry\n' +
-            'hard to type withh feet',
+        text: '\n  asdas       sorry\n' +
+            '  hard to type withh feet',
     },{
         title: 'i cause problems',
-        text: 'i cause problems on purpose',
+        text: '\n  i cause problems on purpose',
     },{
         title: 'peace was never',
-        text: '"peace was never an option"\n' +
-            '   -the goose (me)',
+        text: '\n  "peace was never an option"\n' +
+            '     -the goose (me)',
     },
 ] as const;

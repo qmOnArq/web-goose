@@ -32,11 +32,12 @@ export class Goose {
     };
 
     private target = {
-        action: 'stand' as 'stand' | 'moveTo' | 'followMouse' | 'goForPresent' | 'bringPresent',
+        action: 'stand' as GooseAction | null,
         position: { x: 0, y: 0 },
         time: 0,
         mirrored: false,
         additionalData: {} as any,
+        queued: [] as { action: GooseAction; data?: any }[],
     };
 
     private head = {
@@ -54,8 +55,6 @@ export class Goose {
         windowsInjectStyles();
         Promise.all([GOOSE_IMAGE_PROMISE, ...MEME_IMAGE_PROMISE]).then(() => {
             this.init(debug);
-            createWinXpWindow('text', MEME_TEXTS[1].text, 500, 100, true, true);
-            createWinXpWindow('image', MEME_IMAGE_STR[0], 100, 100, true, true);
         });
     }
 
@@ -65,11 +64,15 @@ export class Goose {
             this.mousePosition.y = e.pageY;
         });
 
+        document.addEventListener('scroll', () => {
+            this.updateWindowsPositions();
+        });
+
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.canvasWidth * this.scale;
         this.canvas.height = this.canvasHeight * this.scale;
         this.canvas.style.background = debug ? '#00393b' : 'transparent';
-        this.canvas.style.position = 'absolute';
+        this.canvas.style.position = 'fixed';
         this.canvas.style.zIndex = '999999';
         this.canvas.oncontextmenu = e => {
             e.preventDefault();
@@ -83,11 +86,26 @@ export class Goose {
 
         this.lastUpdateTimestamp = +new Date();
         requestAnimationFrame(() => this.loop());
+
+        // TODO - start and starting position
+        this.goForPresent();
     }
 
     private update(delta: number) {
         if (!this.ctx || !this.canvas) {
-            throw new Error('Goose not initialized, call start() first.');
+            throw new Error(NOT_INITIALIZED_MSG);
+        }
+
+        if (this.target.action == null) {
+            if (this.target.queued.length === 0) {
+                this.stand();
+                // TODO
+            } else {
+                const action = this.target.queued[0];
+                this.target.queued = this.target.queued.slice(1);
+                this.target.additionalData = action.data ?? {};
+                this[action.action]();
+            }
         }
 
         this.timeSinceHonk += delta;
@@ -98,25 +116,12 @@ export class Goose {
         if (this.body.time > 0.1) {
             this.body.time = 0;
             this.body.frame++;
-            if (this.body.frame > 1000_000_000) {
+            if (this.body.frame > this.bodies[this.body.state].length) {
                 this.body.frame = 0;
             }
         }
 
-        let forcedSpeed = null;
-
-        if (this.target.action === 'followMouse') {
-            this.target.position = this.mousePosition;
-        }
-
-        if (this.target.action === 'bringPresent') {
-            this.target.mirrored = true;
-            forcedSpeed = 'walking';
-            this.head.index = 10;
-
-            // Testing
-            this.target.position = this.mousePosition;
-        }
+        let forcedSpeed = null as 'running' | 'walking' | 'standing' | null;
 
         const distance = Helpers.distance(
             this.position.x,
@@ -124,6 +129,41 @@ export class Goose {
             this.target.position.x,
             this.target.position.y,
         );
+
+        switch (this.target.action) {
+            case 'bringPresent':
+                forcedSpeed = 'walking';
+                const window = this.target.additionalData.window as WindowsXpWindow;
+                window.left = this.target.additionalData.fromLeft
+                    ? this.position.x - window.width - 15 * this.scale
+                    : this.position.x + 15 * this.scale;
+                window.top = this.position.y + 30 - window.height;
+                if (distance < 15) {
+                    this.clearCurrentAction();
+                }
+                break;
+            case 'goForPresent':
+                if (distance < 5) {
+                    this.clearCurrentAction();
+                }
+                forcedSpeed = 'running';
+                break;
+            case 'followMouse':
+                this.target.position = this.mousePosition;
+                break;
+            case 'moveTo':
+                if (distance < 30) {
+                    this.clearCurrentAction();
+                }
+                break;
+            case 'stand':
+                if (this.target.time >= this.target.additionalData.waitFor) {
+                    this.clearCurrentAction();
+                }
+                break;
+            default:
+                break;
+        }
 
         let speed = 0;
 
@@ -161,9 +201,10 @@ export class Goose {
 
     private draw() {
         if (!this.ctx || !this.canvas) {
-            throw new Error('Goose not initialized, call start() first.');
+            throw new Error(NOT_INITIALIZED_MSG);
         }
 
+        this.updateWindowsPositions();
         this.updateCanvasPosition();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         GooseDrawing.drawGoose(
@@ -185,35 +226,78 @@ export class Goose {
         requestAnimationFrame(() => this.loop());
     }
 
+    private updateWindowsPositions() {
+        this.windows.forEach(window => {
+            window.node.style.left = `${window.left}px`;
+            window.node.style.top = `${window.top - document.documentElement.scrollTop}px`;
+        });
+    }
+
     private updateCanvasPosition() {
         if (!this.ctx || !this.canvas) {
-            throw new Error('Goose not initialized, call start() first.');
+            throw new Error(NOT_INITIALIZED_MSG);
         }
 
         this.canvas.style.left = `${this.position.x - this.canvas.width / 2}px`;
-        this.canvas.style.top = `${this.position.y - this.canvas.height}px`;
+        this.canvas.style.top = `${this.position.y - this.canvas.height - document.documentElement.scrollTop}px`;
+    }
+
+    isGooseOnScreen() {
+        if (!this.ctx || !this.canvas) {
+            throw new Error(NOT_INITIALIZED_MSG);
+        }
+
+        return Helpers.isPointInViewportWithPadding(
+            this.position.x,
+            this.position.y,
+            Math.max(this.canvas.width, this.canvas.height),
+        );
+    }
+
+    private getRandomPointOnScreen(additionalPadding = 0) {
+        if (!this.ctx || !this.canvas) {
+            throw new Error(NOT_INITIALIZED_MSG);
+        }
+
+        const rect = Helpers.getViewportWithPadding(
+            Math.max(this.canvas.width, this.canvas.height) * 2 + additionalPadding,
+        );
+        // TODO
+        return {
+            x: Math.round(rect.width * Math.random()) + rect.left,
+            y: Math.round(rect.height * Math.random()) + rect.top,
+        };
     }
 
     followMouse() {
         if (!this.ctx || !this.canvas) {
-            throw new Error('Goose not initialized, call start() first.');
+            throw new Error(NOT_INITIALIZED_MSG);
         }
 
         this.target.mirrored = false;
         this.target.action = 'followMouse';
-        this.target.additionalData = {};
         this.target.time = 0;
         this.head.index = 0;
     }
 
     goForPresent(type?: 'image' | 'text', content?: string, fromLeft?: boolean) {
         if (!this.ctx || !this.canvas) {
-            throw new Error('Goose not initialized, call start() first.');
+            throw new Error(NOT_INITIALIZED_MSG);
+        }
+
+        if (!this.isGooseOnScreen()) {
+            this.target.queued = [
+                { action: 'moveTo' },
+                { action: 'stand' },
+                { action: 'goForPresent' },
+                ...this.target.queued,
+            ];
+            this.clearCurrentAction();
+            return;
         }
 
         this.target.mirrored = false;
         this.target.action = 'goForPresent';
-        this.target.additionalData = {};
         this.target.time = 0;
         this.head.index = 0;
 
@@ -223,22 +307,84 @@ export class Goose {
             content = type === 'image' ? Helpers.randomItem(MEME_IMAGE_STR) : Helpers.randomItem(MEME_TEXTS).text;
         }
 
-        const x = 0;
-        const y = 0;
+        const x = fromLeft ? -100 : document.body.clientWidth + 100;
+        const y = document.documentElement.scrollTop + 400;
 
-        this.windows.push(createWinXpWindow(type, content, x, y, !fromLeft, false));
+        const window = createWinXpWindow(type, content, x, y, !fromLeft, false);
+        this.windows.push(window);
+
+        window.closed.then(() => {
+            // TODO
+        });
+
+        this.target.position = {
+            x: fromLeft ? window.left + window.width : window.left,
+            y: window.top + window.height - 30,
+        };
+
+        this.target.queued = [
+            { action: 'stand' },
+            { action: 'bringPresent', data: { window, fromLeft } },
+            ...this.target.queued,
+        ];
     }
 
     private bringPresent() {
         if (!this.ctx || !this.canvas) {
-            throw new Error('Goose not initialized, call start() first.');
+            throw new Error(NOT_INITIALIZED_MSG);
         }
+
+        const window = this.target.additionalData.window as WindowsXpWindow;
+        if (!window) {
+            this.clearCurrentAction();
+            return;
+        }
+
+        this.target.mirrored = true;
+        this.target.action = 'bringPresent';
+        this.target.time = 0;
+        this.head.index = 10;
+        this.target.position = this.getRandomPointOnScreen(Math.max(window.height, window.width));
     }
 
     honk() {
         if (!this.ctx || !this.canvas) {
-            throw new Error('Goose not initialized, call start() first.');
+            throw new Error(NOT_INITIALIZED_MSG);
         }
         this.timeSinceHonk = 0;
+        // TODO
+    }
+
+    stand() {
+        if (!this.ctx || !this.canvas) {
+            throw new Error(NOT_INITIALIZED_MSG);
+        }
+
+        this.target.mirrored = false;
+        this.target.action = 'stand';
+        this.target.additionalData.waitFor = this.target.additionalData.waitFor ?? Math.random() * 4 + 1;
+        this.target.time = 0;
+        this.head.index = 0;
+    }
+
+    moveTo(target?: { x: number; y: number }) {
+        if (!this.ctx || !this.canvas) {
+            throw new Error(NOT_INITIALIZED_MSG);
+        }
+
+        this.target.mirrored = false;
+        this.target.action = 'moveTo';
+        this.target.time = 0;
+        this.head.index = 0;
+
+        this.target.position = target ?? this.target.additionalData.target ?? this.getRandomPointOnScreen();
+    }
+
+    clearCurrentAction() {
+        this.target.action = null;
+        this.target.additionalData = {};
     }
 }
+
+type GooseAction = 'stand' | 'moveTo' | 'followMouse' | 'goForPresent' | 'bringPresent';
+const NOT_INITIALIZED_MSG = 'Goose not initialized, call start() first.';
