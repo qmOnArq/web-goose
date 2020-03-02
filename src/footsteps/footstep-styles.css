@@ -1,0 +1,14 @@
+.__web-goose-step__ {
+    position: absolute;
+    width: 7px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(165, 42, 42, 0.8);
+    z-index: 999997;
+    opacity: 1;
+}
+
+.__web-goose-step-fade__ {
+    opacity: 0;
+    transition: opacity 1s;
+}

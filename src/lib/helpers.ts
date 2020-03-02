@@ -41,4 +41,9 @@ export namespace Helpers {
     export function isPointInViewportWithPadding(x: number, y: number, padding = 0) {
         return isPointInRect(x, y, getViewportWithPadding(padding));
     }
+
+    export function angle(x1: number, y1: number, x2: number, y2: number) {
+        const direction = {x: x2 - x1, y: y2 - y1};
+        return Math.atan2(direction.y, direction.x) * 180 / Math.PI;
+    }
 }

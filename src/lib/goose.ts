@@ -7,6 +7,8 @@ import { MEME_IMAGE_PROMISE, MEME_IMAGE_STR } from '../assets/meme-images';
 import { createWinXpWindow, WindowsXpWindow } from '../windows-window/window-maker';
 import { MEME_TEXTS } from '../assets/meme-texts';
 import { windowsInjectStyles } from '../windows-window/windows-inject-styles';
+import { createFootstep } from '../footsteps/footstep-maker';
+import { footstepInjectStyles } from '../footsteps/footstep-inject-styles';
 
 export class Goose {
     private readonly canvasWidth = 50;
@@ -48,11 +50,13 @@ export class Goose {
     private windows: WindowsXpWindow[] = [];
 
     private timeSinceHonk = 0;
+    private timeSinceFootstep = 0;
 
     private mousePosition = { x: 0, y: 0 };
 
     start(debug = false) {
         windowsInjectStyles();
+        footstepInjectStyles();
         Promise.all([GOOSE_IMAGE_PROMISE, ...MEME_IMAGE_PROMISE]).then(() => {
             this.init(debug);
         });
@@ -99,7 +103,7 @@ export class Goose {
         if (this.target.action == null) {
             if (this.target.queued.length === 0) {
                 this.stand();
-                // TODO
+                // TODO - figure out random action
             } else {
                 const action = this.target.queued[0];
                 this.target.queued = this.target.queued.slice(1);
@@ -177,6 +181,8 @@ export class Goose {
             this.body.state = 'standing';
         }
 
+        const oldPosition = this.position;
+
         this.position = Helpers.moveTowards(
             this.position.x,
             this.position.y,
@@ -197,6 +203,14 @@ export class Goose {
         this.mirrored = this.target.mirrored
             ? this.position.x < this.target.position.x
             : this.position.x > this.target.position.x;
+
+        this.timeSinceFootstep += delta;
+        if (oldPosition.x !== this.position.x || oldPosition.y !== this.position.y) {
+            if (this.timeSinceFootstep > 0.2) {
+                this.timeSinceFootstep = 0;
+                createFootstep(oldPosition.x, oldPosition.y, this.position.x, this.position.y);
+            }
+        }
     }
 
     private draw() {
@@ -262,7 +276,6 @@ export class Goose {
         const rect = Helpers.getViewportWithPadding(
             Math.max(this.canvas.width, this.canvas.height) * 2 + additionalPadding,
         );
-        // TODO
         return {
             x: Math.round(rect.width * Math.random()) + rect.left,
             y: Math.round(rect.height * Math.random()) + rect.top,
@@ -314,7 +327,11 @@ export class Goose {
         this.windows.push(window);
 
         window.closed.then(() => {
-            // TODO
+            if (this.target.action === 'bringPresent' && this.target.additionalData.window === window) {
+                this.clearCurrentAction();
+                this.honk();
+                this.openWings();
+            }
         });
 
         this.target.position = {
@@ -344,7 +361,8 @@ export class Goose {
         this.target.action = 'bringPresent';
         this.target.time = 0;
         this.head.index = 10;
-        this.target.position = this.getRandomPointOnScreen(Math.max(window.height, window.width));
+        // TODO - window too up
+        this.target.position = this.getRandomPointOnScreen(Math.max(window.height, window.width) + 100);
     }
 
     honk() {
@@ -352,7 +370,14 @@ export class Goose {
             throw new Error(NOT_INITIALIZED_MSG);
         }
         this.timeSinceHonk = 0;
-        // TODO
+        // TODO - honk
+    }
+
+    openWings() {
+        if (!this.ctx || !this.canvas) {
+            throw new Error(NOT_INITIALIZED_MSG);
+        }
+        // TODO - open wings
     }
 
     stand() {
