@@ -329,8 +329,10 @@ export class Goose {
         window.closed.then(() => {
             if (this.target.action === 'bringPresent' && this.target.additionalData.window === window) {
                 this.clearCurrentAction();
-                this.honk();
-                this.openWings();
+                setTimeout(() => {
+                    this.honk();
+                    this.openWings();
+                }, 100);
             }
         });
 
