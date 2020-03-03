@@ -18,8 +18,10 @@ export class Goose {
     private readonly shadowWidth = 28;
     private readonly shadowHeight = this.shadowWidth / 3;
     private readonly scale = 2;
+
     private readonly walkSpeed = 150;
-    private readonly runSpeed = this.walkSpeed * 2;
+    private readonly runSpeed = this.walkSpeed * 1.5;
+    private readonly fastRunningSpeed = this.runSpeed * 1.5;
 
     private canvas?: HTMLCanvasElement;
     private ctx?: CanvasRenderingContext2D;
@@ -62,6 +64,12 @@ export class Goose {
     private honking = {
         is: false,
         time: 500,
+    };
+
+    private fastRunning = {
+        is: false,
+        closingWings: false,
+        time: 0,
     };
 
     private windows: WindowsXpWindow[] = [];
@@ -163,6 +171,7 @@ export class Goose {
         this.head.time += delta;
         this.honking.time += delta;
         this.wing.time += delta;
+        this.fastRunning.time += delta;
 
         if (this.body.time > 0.1) {
             this.body.time = 0;
@@ -176,7 +185,7 @@ export class Goose {
             this.honking.is = false;
         }
 
-        let forcedSpeed = null as 'running' | 'walking' | 'standing' | null;
+        let forcedSpeed = null as 'fastRunning' | 'running' | 'walking' | 'standing' | null;
 
         const distance = Helpers.distance(
             this.position.x,
@@ -207,7 +216,7 @@ export class Goose {
                 this.target.position = this.mousePosition;
                 break;
             case 'moveTo':
-                if (distance < 30) {
+                if (distance < 10) {
                     this.clearCurrentAction();
                 }
                 break;
@@ -220,16 +229,32 @@ export class Goose {
                 break;
         }
 
-        let speed = 0;
+        let speed: number;
 
-        if ((!forcedSpeed && distance > 250) || forcedSpeed === 'running') {
+        if ((!forcedSpeed && distance > 500) || forcedSpeed === 'fastRunning') {
+            this.body.state = 'running';
+            speed = this.fastRunningSpeed;
+            if (!this.fastRunning.is) {
+                this.startFastRunning();
+            }
+        } else if ((!forcedSpeed && distance > 250) || forcedSpeed === 'running') {
             this.body.state = 'running';
             speed = this.runSpeed;
-        } else if ((!forcedSpeed && distance > 25) || forcedSpeed === 'walking') {
+            if (this.fastRunning.is) {
+                this.stopFastRunning();
+            }
+        } else if ((!forcedSpeed && distance > 5) || forcedSpeed === 'walking') {
             this.body.state = 'walking';
             speed = this.walkSpeed;
+            if (this.fastRunning.is) {
+                this.stopFastRunning();
+            }
         } else {
             this.body.state = 'standing';
+            speed = 0;
+            if (this.fastRunning.is) {
+                this.stopFastRunning();
+            }
         }
 
         const oldPosition = this.position;
@@ -273,6 +298,30 @@ export class Goose {
         this.updateCanvasPosition();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        if (this.fastRunning.is) {
+            const runningWingAnimDuration = 0.3;
+            const runningWingStage = Helpers.clamp(
+                0,
+                Math.round((this.fastRunning.time / runningWingAnimDuration / 3) * 10),
+                2,
+            );
+            this.wing.shown = true;
+            this.wing.index = runningWingStage;
+        } else if (this.fastRunning.closingWings) {
+            const runningWingAnimDuration = 0.3;
+            const runningWingStage = Helpers.clamp(
+                0,
+                Math.round((this.fastRunning.time / runningWingAnimDuration / 3) * 10),
+                2,
+            );
+            this.wing.shown = true;
+            this.wing.index = 2 - runningWingStage;
+            if (this.fastRunning.time > runningWingAnimDuration) {
+                this.wing.shown = false;
+                this.fastRunning.closingWings = false;
+            }
+        }
+
         if (this.wing.shown) {
             GooseDrawing.drawWings(
                 this.ctx,
@@ -285,7 +334,8 @@ export class Goose {
             );
         }
 
-        let headIndex = this.honking.is ? getHonkHeadForIndex(this.head.index) : this.head.index;
+        let headIndex = this.fastRunning.is ? 6 : this.head.index;
+        headIndex = this.honking.is ? getHonkHeadForIndex(headIndex) : headIndex;
 
         GooseDrawing.drawGoose(
             this.ctx,
@@ -504,6 +554,18 @@ export class Goose {
     clearCurrentAction() {
         this.target.action = null;
         this.target.additionalData = {};
+    }
+
+    startFastRunning() {
+        this.fastRunning.is = true;
+        this.fastRunning.closingWings = false;
+        this.fastRunning.time = 0;
+    }
+
+    stopFastRunning() {
+        this.fastRunning.is = false;
+        this.fastRunning.closingWings = true;
+        this.fastRunning.time = 0;
     }
 }
 
