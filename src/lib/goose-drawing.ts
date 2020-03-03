@@ -1,6 +1,7 @@
 import { GOOSE_IMAGE } from '../assets/goose-image';
 import { GooseHead } from './goose-heads';
 import { GooseBody } from './goose-bodies';
+import { GooseWings } from './goose-wings';
 
 export namespace GooseDrawing {
     export function drawHead(
@@ -68,6 +69,11 @@ export namespace GooseDrawing {
 
             ctx.fillStyle = 'blue';
             ctx.fillRect(h2.x, h2.y, 5, 5);
+
+            const w = calculatePtOnBody(body.wingsX, body.wingsY, x, y, body, scale, mirrored);
+
+            ctx.fillStyle = 'yellow';
+            ctx.fillRect(w.x, w.y, 5, 5);
         }
     }
 
@@ -119,6 +125,31 @@ export namespace GooseDrawing {
             p.y + head.honkY * scale,
             8 * scale,
             16 * scale,
+        );
+    }
+
+    export function drawWings(
+        ctx: CanvasRenderingContext2D,
+        wings: GooseWings,
+        body: GooseBody,
+        x: number,
+        y: number,
+        scale: number,
+        mirrored: boolean,
+    ) {
+        const wingsP = calculatePtOnBody(body.wingsX, body.wingsY, x, y, body, scale, mirrored);
+        const p = calculateStartPoint(wingsP.x, wingsP.y, wings.anchorX, wings.anchorY, scale, mirrored, wings.imgW);
+
+        ctx.drawImage(
+            GOOSE_IMAGE,
+            !mirrored ? wings.imgX : GOOSE_IMAGE.width - wings.imgW - wings.imgX,
+            wings.imgY,
+            wings.imgW,
+            wings.imgH,
+            p.x,
+            p.y,
+            wings.imgW * scale,
+            wings.imgH * scale,
         );
     }
 }

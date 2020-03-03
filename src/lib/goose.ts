@@ -10,6 +10,7 @@ import { windowsInjectStyles } from '../windows-window/windows-inject-styles';
 import { createFootstep } from '../footsteps/footstep-maker';
 import { footstepInjectStyles } from '../footsteps/footstep-inject-styles';
 import { playHonk } from '../assets/honk-sound';
+import { getWings } from './goose-wings';
 
 export class Goose {
     private readonly canvasWidth = 80;
@@ -27,6 +28,7 @@ export class Goose {
     private lastUpdateTimestamp = 0;
     private readonly heads = getHeads();
     private readonly bodies = getBodies();
+    private readonly wings = getWings();
 
     private position = { x: 0, y: 0 };
     private mirrored = false;
@@ -48,6 +50,12 @@ export class Goose {
 
     private head = {
         index: 0,
+        time: 0,
+    };
+
+    private wing = {
+        index: 0,
+        shown: false,
         time: 0,
     };
 
@@ -144,6 +152,7 @@ export class Goose {
         this.target.time += delta;
         this.head.time += delta;
         this.honking.time += delta;
+        this.wing.time += delta;
 
         if (this.body.time > 0.1) {
             this.body.time = 0;
@@ -253,6 +262,18 @@ export class Goose {
         this.updateWindowsPositions();
         this.updateCanvasPosition();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        if (this.wing.shown) {
+            GooseDrawing.drawWings(
+                this.ctx,
+                this.wings[this.wing.index],
+                this.bodies[this.body.state][this.body.frame % this.bodies[this.body.state].length],
+                this.canvas.width / 2,
+                this.canvas.height - 3 * this.scale,
+                this.scale,
+                this.mirrored,
+            );
+        }
 
         let headIndex = this.honking.is ? getHonkHeadForIndex(this.head.index) : this.head.index;
 
