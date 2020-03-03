@@ -1,5 +1,9 @@
 export namespace Helpers {
     export function moveTowards(x1: number, y1: number, x2: number, y2: number, distance: number) {
+        if (x2 == x1 && y2 == y1) {
+            return { x: x2, y: y2 };
+        }
+
         const vector = { x: x2 - x1, y: y2 - y1 };
         const magnitude = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
         if (magnitude === 0) {
@@ -43,7 +47,7 @@ export namespace Helpers {
     }
 
     export function angle(x1: number, y1: number, x2: number, y2: number) {
-        const direction = {x: x2 - x1, y: y2 - y1};
-        return Math.atan2(direction.y, direction.x) * 180 / Math.PI;
+        const direction = { x: x2 - x1, y: y2 - y1 };
+        return (Math.atan2(direction.y, direction.x) * 180) / Math.PI;
     }
 }

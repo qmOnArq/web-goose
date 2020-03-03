@@ -87,7 +87,7 @@ export function createWinXpWindow(
         top = top - rect.height - 30;
     }
 
-    dom.style.left = `${left}px`;
+    dom.style.left = `${left - document.documentElement.scrollLeft}px`;
     dom.style.top = `${top - document.documentElement.scrollTop}px`;
 
     const closed = new Promise<void>(resolve => {

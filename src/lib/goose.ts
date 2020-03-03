@@ -71,6 +71,8 @@ export class Goose {
 
     private mousePosition = { x: 0, y: 0 };
 
+    private visible = false;
+
     start(debug = false) {
         windowsInjectStyles();
         footstepInjectStyles();
@@ -88,6 +90,17 @@ export class Goose {
         document.addEventListener('scroll', () => {
             this.updateWindowsPositions();
         });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                this.lastUpdateTimestamp = +new Date();
+                this.visible = true;
+            } else {
+                this.visible = false;
+            }
+        });
+
+        this.visible = document.visibilityState === 'visible';
 
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.canvasWidth * this.scale;
@@ -124,10 +137,7 @@ export class Goose {
         requestAnimationFrame(() => this.loop());
 
         // TODO - start and starting position
-        // this.goForPresent();
-        this.position.x = 200;
-        this.position.y = 200;
-        this.target.position = this.position;
+        this.goForPresent();
     }
 
     private update(delta: number) {
@@ -303,16 +313,18 @@ export class Goose {
     }
 
     private loop() {
-        const now = +new Date();
-        this.update((now - this.lastUpdateTimestamp) / 1000);
-        this.draw();
-        this.lastUpdateTimestamp = now;
+        if (this.visible) {
+            const now = +new Date();
+            this.update((now - this.lastUpdateTimestamp) / 1000);
+            this.draw();
+            this.lastUpdateTimestamp = now;
+        }
         requestAnimationFrame(() => this.loop());
     }
 
     private updateWindowsPositions() {
         this.windows.forEach(window => {
-            window.node.style.left = `${window.left}px`;
+            window.node.style.left = `${window.left - document.documentElement.scrollLeft}px`;
             window.node.style.top = `${window.top - document.documentElement.scrollTop}px`;
         });
     }
@@ -322,10 +334,12 @@ export class Goose {
             throw new Error(NOT_INITIALIZED_MSG);
         }
 
-        this.canvas.style.left = `${this.position.x - this.canvas.width / 2}px`;
+        this.canvas.style.left = `${this.position.x - this.canvas.width / 2 - document.documentElement.scrollLeft}px`;
         this.canvas.style.top = `${this.position.y - this.canvas.height - document.documentElement.scrollTop}px`;
 
-        this.shadow.style.left = `${this.position.x - (this.shadowWidth * this.scale) / 2}px`;
+        this.shadow.style.left = `${this.position.x -
+            (this.shadowWidth * this.scale) / 2 -
+            document.documentElement.scrollLeft}px`;
         this.shadow.style.top = `${this.position.y -
             (this.shadowHeight * this.scale) / 1.5 -
             document.documentElement.scrollTop}px`;
@@ -395,7 +409,7 @@ export class Goose {
             content = type === 'image' ? Helpers.randomItem(MEME_IMAGE_STR) : Helpers.randomItem(MEME_TEXTS).text;
         }
 
-        const x = fromLeft ? -100 : document.body.clientWidth + 100;
+        const x = fromLeft ? -100 : document.body.clientWidth + 100 + document.documentElement.scrollLeft;
         const y = document.documentElement.scrollTop + 400;
 
         const window = createWinXpWindow(type, content, x, y, !fromLeft, false);
@@ -405,9 +419,12 @@ export class Goose {
             if (this.target.action === 'bringPresent' && this.target.additionalData.window === window) {
                 this.clearCurrentAction();
                 setTimeout(() => {
+                    this.stand();
                     this.honk();
-                    this.openWings();
-                }, 100);
+                    this.flapWings();
+                    this.target.position.x = this.position.x;
+                    this.target.position.y = this.position.y;
+                }, 200);
             }
         });
 
@@ -452,11 +469,11 @@ export class Goose {
         playHonk();
     }
 
-    openWings() {
+    flapWings() {
         if (!this.ctx || !this.canvas) {
             throw new Error(NOT_INITIALIZED_MSG);
         }
-        // TODO - open wings
+        // TODO - flap wings
     }
 
     stand() {
@@ -466,7 +483,7 @@ export class Goose {
 
         this.target.mirrored = false;
         this.target.action = 'stand';
-        this.target.additionalData.waitFor = this.target.additionalData.waitFor ?? Math.random() * 4 + 1;
+        this.target.additionalData.waitFor = this.target.additionalData.waitFor ?? Math.random() * 3 + 1;
         this.target.time = 0;
         this.head.index = 0;
     }
