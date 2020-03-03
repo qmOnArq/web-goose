@@ -450,7 +450,6 @@ export class Goose {
         this.honking.is = true;
         this.honking.time = 0;
         playHonk();
-        // TODO - honk
     }
 
     openWings() {
