@@ -1,5 +1,5 @@
 import { GooseDrawing } from './goose-drawing';
-import { getHeads } from './goose-heads';
+import { getHeads, getHonkHeadForIndex } from './goose-heads';
 import { getBodies } from './goose-bodies';
 import { Helpers } from './helpers';
 import { GOOSE_IMAGE_PROMISE } from '../assets/goose-image';
@@ -9,16 +9,20 @@ import { MEME_TEXTS } from '../assets/meme-texts';
 import { windowsInjectStyles } from '../windows-window/windows-inject-styles';
 import { createFootstep } from '../footsteps/footstep-maker';
 import { footstepInjectStyles } from '../footsteps/footstep-inject-styles';
+import { playHonk } from '../assets/honk-sound';
 
 export class Goose {
     private readonly canvasWidth = 50;
     private readonly canvasHeight = 50;
+    private readonly shadowWidth = 28;
+    private readonly shadowHeight = this.shadowWidth / 3;
     private readonly scale = 2;
     private readonly walkSpeed = 150;
     private readonly runSpeed = this.walkSpeed * 2;
 
     private canvas?: HTMLCanvasElement;
     private ctx?: CanvasRenderingContext2D;
+    private shadow?: HTMLElement;
 
     private lastUpdateTimestamp = 0;
     private readonly heads = getHeads();
@@ -44,6 +48,11 @@ export class Goose {
 
     private head = {
         index: 0,
+        time: 0,
+    };
+
+    private honking = {
+        is: false,
         time: 0,
     };
 
@@ -81,11 +90,26 @@ export class Goose {
         this.canvas.oncontextmenu = e => {
             e.preventDefault();
         };
+        this.canvas.onclick = e => {
+            e.preventDefault();
+            this.honk();
+        };
+
+        this.shadow = document.createElement('div');
+        this.shadow.style.pointerEvents = 'none';
+        this.shadow.style.position = 'fixed';
+        this.shadow.style.zIndex = '999996';
+        this.shadow.style.width = `${this.shadowWidth * this.scale}px`;
+        this.shadow.style.height = `${this.shadowHeight * this.scale}px`;
+        this.shadow.style.borderRadius = '50%';
+        this.shadow.style.background = 'black';
+        this.shadow.style.opacity = '0.1';
 
         this.ctx = this.canvas.getContext('2d')!;
         this.ctx.imageSmoothingEnabled = false;
 
         this.updateCanvasPosition();
+        document.body.appendChild(this.shadow);
         document.body.appendChild(this.canvas);
 
         this.lastUpdateTimestamp = +new Date();
@@ -116,6 +140,7 @@ export class Goose {
         this.body.time += delta;
         this.target.time += delta;
         this.head.time += delta;
+        this.honking.time += delta;
 
         if (this.body.time > 0.1) {
             this.body.time = 0;
@@ -123,6 +148,10 @@ export class Goose {
             if (this.body.frame > this.bodies[this.body.state].length) {
                 this.body.frame = 0;
             }
+        }
+
+        if (this.honking.time > 0.1) {
+            this.honking.is = false;
         }
 
         let forcedSpeed = null as 'running' | 'walking' | 'standing' | null;
@@ -221,10 +250,13 @@ export class Goose {
         this.updateWindowsPositions();
         this.updateCanvasPosition();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        const headIndex = this.honking.is ? getHonkHeadForIndex(this.head.index) : this.head.index;
+
         GooseDrawing.drawGoose(
             this.ctx,
             this.bodies[this.body.state][this.body.frame % this.bodies[this.body.state].length],
-            this.heads[this.head.index],
+            this.heads[headIndex],
             this.canvas.width / 2,
             this.canvas.height - 3 * this.scale,
             this.scale,
@@ -248,12 +280,17 @@ export class Goose {
     }
 
     private updateCanvasPosition() {
-        if (!this.ctx || !this.canvas) {
+        if (!this.ctx || !this.canvas || !this.shadow) {
             throw new Error(NOT_INITIALIZED_MSG);
         }
 
         this.canvas.style.left = `${this.position.x - this.canvas.width / 2}px`;
         this.canvas.style.top = `${this.position.y - this.canvas.height - document.documentElement.scrollTop}px`;
+
+        this.shadow.style.left = `${this.position.x - (this.shadowWidth * this.scale) / 2}px`;
+        this.shadow.style.top = `${this.position.y -
+            (this.shadowHeight * this.scale) / 1.5 -
+            document.documentElement.scrollTop}px`;
     }
 
     isGooseOnScreen() {
@@ -372,6 +409,9 @@ export class Goose {
             throw new Error(NOT_INITIALIZED_MSG);
         }
         this.timeSinceHonk = 0;
+        this.honking.is = true;
+        this.honking.time = 0;
+        playHonk();
         // TODO - honk
     }
 
