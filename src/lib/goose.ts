@@ -12,7 +12,7 @@ import { footstepInjectStyles } from '../footsteps/footstep-inject-styles';
 import { playHonk } from '../assets/honk-sound';
 
 export class Goose {
-    private readonly canvasWidth = 50;
+    private readonly canvasWidth = 80;
     private readonly canvasHeight = 50;
     private readonly shadowWidth = 28;
     private readonly shadowHeight = this.shadowWidth / 3;
@@ -53,7 +53,7 @@ export class Goose {
 
     private honking = {
         is: false,
-        time: 0,
+        time: 500,
     };
 
     private windows: WindowsXpWindow[] = [];
@@ -116,7 +116,10 @@ export class Goose {
         requestAnimationFrame(() => this.loop());
 
         // TODO - start and starting position
-        this.goForPresent();
+        // this.goForPresent();
+        this.position.x = 200;
+        this.position.y = 200;
+        this.target.position = this.position;
     }
 
     private update(delta: number) {
@@ -251,10 +254,24 @@ export class Goose {
         this.updateCanvasPosition();
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        const headIndex = this.honking.is ? getHonkHeadForIndex(this.head.index) : this.head.index;
+        let headIndex = this.honking.is ? getHonkHeadForIndex(this.head.index) : this.head.index;
 
         GooseDrawing.drawGoose(
             this.ctx,
+            this.bodies[this.body.state][this.body.frame % this.bodies[this.body.state].length],
+            this.heads[headIndex],
+            this.canvas.width / 2,
+            this.canvas.height - 3 * this.scale,
+            this.scale,
+            this.mirrored,
+        );
+
+        const honkAnimDuration = 0.3;
+        const honkStage = Math.round((this.honking.time / honkAnimDuration / 3) * 10);
+
+        GooseDrawing.drawHonk(
+            this.ctx,
+            honkStage,
             this.bodies[this.body.state][this.body.frame % this.bodies[this.body.state].length],
             this.heads[headIndex],
             this.canvas.width / 2,

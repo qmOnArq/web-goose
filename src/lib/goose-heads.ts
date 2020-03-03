@@ -6,6 +6,8 @@ export interface GooseHead {
     type: 'side' | 'top';
     anchorX: number;
     anchorY: number;
+    honkX: number;
+    honkY: number;
     description: string;
 }
 
@@ -61,6 +63,8 @@ export function getHeads() {
                 anchorX: 4,
                 anchorY: 15,
                 description: '',
+                honkX: 18,
+                honkY: 3,
             });
         }
     }
@@ -88,6 +92,33 @@ export function getHeads() {
     heads[9].type = 'side';
     heads[10].type = 'side';
     heads[11].type = 'side';
+
+    heads[4].honkX = 15;
+    heads[4].honkY = -1;
+
+    heads[5].honkX = 15;
+    heads[5].honkY = -1;
+
+    heads[8].honkX = 18;
+    heads[8].honkY = -2;
+
+    heads[9].honkX = 18;
+    heads[9].honkY = -2;
+
+    heads[10].honkX = 18;
+    heads[10].honkY = 8;
+
+    heads[11].honkX = 18;
+    heads[11].honkY = 8;
+
+    heads[13].honkX = 15;
+    heads[13].honkY = 3;
+
+    heads[14].honkX = 14;
+    heads[14].honkY = 3;
+
+    heads[15].honkX = 14;
+    heads[15].honkY = 3;
 
     return heads;
 }

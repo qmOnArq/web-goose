@@ -89,6 +89,38 @@ export namespace GooseDrawing {
 
         drawHead(ctx, head, headP.x, headP.y, scale, mirrored, debug);
     }
+
+    export function drawHonk(
+        ctx: CanvasRenderingContext2D,
+        stage: number,
+        body: GooseBody,
+        head: GooseHead,
+        x: number,
+        y: number,
+        scale: number,
+        mirrored: boolean,
+    ) {
+        if (stage < 0 || stage > 2) {
+            return;
+        }
+
+        const headA =
+            head.type === 'side' ? { x: body.headSideX, y: body.headSideY } : { x: body.headTopX, y: body.headTopY };
+        const headP = calculatePtOnBody(headA.x, headA.y, x, y, body, scale, mirrored);
+        const p = calculateStartPoint(headP.x, headP.y, head.anchorX, head.anchorY, scale, mirrored, head.imgW);
+
+        ctx.drawImage(
+            GOOSE_IMAGE,
+            !mirrored ? 2 + (8 + 1) * stage : GOOSE_IMAGE.width - 8 - (2 + (8 + 1) * stage),
+            147,
+            8,
+            16,
+            p.x + (!mirrored ? head.honkX * scale : -head.honkX),
+            p.y + head.honkY * scale,
+            8 * scale,
+            16 * scale,
+        );
+    }
 }
 
 function calculateStartPoint(
