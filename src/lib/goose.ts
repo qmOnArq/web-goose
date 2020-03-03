@@ -72,6 +72,14 @@ export class Goose {
         time: 0,
     };
 
+    private flappingWings = {
+        is: false,
+        time: 0,
+        frameTime: 0,
+        frame: 0,
+        increasing: false,
+    };
+
     private windows: WindowsXpWindow[] = [];
 
     private timeSinceHonk = 0;
@@ -118,6 +126,7 @@ export class Goose {
         this.canvas.style.zIndex = '999999';
         this.canvas.oncontextmenu = e => {
             e.preventDefault();
+            this.flapWings();
         };
         this.canvas.onclick = e => {
             e.preventDefault();
@@ -145,7 +154,9 @@ export class Goose {
         requestAnimationFrame(() => this.loop());
 
         // TODO - start and starting position
-        this.goForPresent();
+        // this.goForPresent();
+        this.target.position.x = 200;
+        this.target.position.y = 200;
     }
 
     private update(delta: number) {
@@ -172,6 +183,8 @@ export class Goose {
         this.honking.time += delta;
         this.wing.time += delta;
         this.fastRunning.time += delta;
+        this.flappingWings.time += delta;
+        this.flappingWings.frameTime += delta;
 
         if (this.body.time > 0.1) {
             this.body.time = 0;
@@ -322,6 +335,32 @@ export class Goose {
             }
         }
 
+        if (this.flappingWings.is) {
+            const frameDuration = 0.07;
+            const length = 6;
+
+            const fullDuration = frameDuration * length * 2 * 2 + frameDuration;
+            if (this.flappingWings.frameTime > frameDuration) {
+                this.flappingWings.frame += this.flappingWings.increasing ? 1 : -1;
+                this.flappingWings.frameTime = 0;
+                if (this.flappingWings.frame >= length) {
+                    this.flappingWings.increasing = false;
+                    this.flappingWings.frame = length - 1;
+                } else if (this.flappingWings.frame === -1) {
+                    this.flappingWings.increasing = true;
+                    this.flappingWings.frame = 0;
+                }
+            }
+
+            this.wing.shown = true;
+            this.wing.index = this.flappingWings.frame;
+
+            if (this.flappingWings.time > fullDuration) {
+                this.wing.shown = false;
+                this.flappingWings.is = false;
+            }
+        }
+
         if (this.wing.shown) {
             GooseDrawing.drawWings(
                 this.ctx,
@@ -334,6 +373,7 @@ export class Goose {
             );
         }
 
+        // TODO - headIndex when flapping wings
         let headIndex = this.fastRunning.is ? 6 : this.head.index;
         headIndex = this.honking.is ? getHonkHeadForIndex(headIndex) : headIndex;
 
@@ -523,7 +563,11 @@ export class Goose {
         if (!this.ctx || !this.canvas) {
             throw new Error(NOT_INITIALIZED_MSG);
         }
-        // TODO - flap wings
+        this.flappingWings.is = true;
+        this.flappingWings.time = 0;
+        this.flappingWings.frame = 0;
+        this.flappingWings.frameTime = 0;
+        this.flappingWings.increasing = true;
     }
 
     stand() {
