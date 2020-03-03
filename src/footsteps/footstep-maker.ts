@@ -21,7 +21,7 @@ export function createFootstep(x: number, y: number, nX: number, nY: number) {
     div.classList.add('__web-goose-step__');
     div.style.left = `${x + -2.5 * Math.random() * 5}px`;
     div.style.top = `${y - 2 + -2.5 * Math.random() * 5}px`;
-    div.style.transform = `rotate(${Helpers.angle(x, y, nX, nY) + -5 + 10 * Math.random()}deg)`;
+    div.style.transform = `scale(2) rotate(${Helpers.angle(x, y, nX, nY) + -5 + 10 * Math.random() + 45}deg)`;
     document.body.appendChild(div);
     setTimeout(() => div.classList.add('__web-goose-step-fade__'), timeToStartFade * 1000);
     setTimeout(() => div.remove(), timeToRemove * 1000);
