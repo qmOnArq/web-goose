@@ -50,12 +50,12 @@ export namespace Helpers {
         return result;
     }
 
-    export function getViewportWithPadding(padding = 0) {
+    export function getViewportWithPadding(xPadding = 0, yPadding = 0) {
         return {
-            top: window.pageYOffset + padding,
-            left: window.pageXOffset + padding,
-            height: window.innerHeight - padding * 2,
-            width: window.innerWidth - padding * 2,
+            top: window.pageYOffset + xPadding,
+            left: window.pageXOffset + yPadding,
+            height: Math.max(0, window.innerHeight - xPadding * 2),
+            width: Math.max(0, window.innerWidth - yPadding * 2),
         };
     }
 
@@ -67,8 +67,8 @@ export namespace Helpers {
         return x >= rect.left && y >= rect.top && x <= rect.left + rect.width && y <= rect.top + rect.height;
     }
 
-    export function isPointInViewportWithPadding(x: number, y: number, padding = 0) {
-        return isPointInRect(x, y, getViewportWithPadding(padding));
+    export function isPointInViewportWithPadding(x: number, y: number, xPadding = 0, yPadding = 0) {
+        return isPointInRect(x, y, getViewportWithPadding(xPadding, yPadding));
     }
 
     export function angle(x1: number, y1: number, x2: number, y2: number) {

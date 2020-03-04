@@ -89,10 +89,6 @@ export class Goose {
 
     private visible = false;
 
-    private get basePadding() {
-        return Math.max(this.canvasWidth * this.scale, this.canvasHeight * this.scale) * 2;
-    }
-
     start(debug = false) {
         windowsInjectStyles();
         footstepInjectStyles();
@@ -150,7 +146,9 @@ export class Goose {
         this.ctx = this.canvas.getContext('2d')!;
         this.ctx.imageSmoothingEnabled = false;
 
-        const startingPosition = this.getRandomPointOutOfScreen(this.basePadding);
+        const startingPosition = this.getRandomPointOutOfScreen(
+            Math.max(this.canvasWidth * this.scale, this.canvasHeight * this.scale) * 2,
+        );
         this.position.x = startingPosition.x;
         this.position.y = startingPosition.y;
         this.target.position.x = startingPosition.x;
@@ -440,20 +438,27 @@ export class Goose {
         return Helpers.isPointInViewportWithPadding(
             this.position.x,
             this.position.y,
-            Math.max(this.canvas.width, this.canvas.height),
+            this.canvas.width,
+            this.canvas.height,
         );
     }
 
-    private getRandomPointOnScreen(additionalPadding = 0) {
+    private getRandomPointOnScreen(xPadding = 0, yPadding = 0) {
         if (!this.ctx || !this.canvas) {
             throw new Error(NOT_INITIALIZED_MSG);
         }
 
-        const rect = Helpers.getViewportWithPadding(this.basePadding + additionalPadding);
-        return {
+        const rect = Helpers.getViewportWithPadding(this.canvas.width + xPadding, this.canvas.height + yPadding);
+        const x = {
             x: Math.round(rect.width * Math.random()) + rect.left,
             y: Math.round(rect.height * Math.random()) + rect.top,
         };
+
+        if (xPadding > 0) {
+            console.log(rect, x, xPadding, yPadding);
+        }
+
+        return x;
     }
 
     private getRandomPointOutOfScreen(padding = 0) {
@@ -564,8 +569,9 @@ export class Goose {
         this.target.action = 'bringPresent';
         this.target.time = 0;
         this.head.index = 10;
-        // TODO - window too up
-        this.target.position = this.getRandomPointOnScreen(Math.max(window.height, window.width) + 100);
+        this.target.position = this.getRandomPointOnScreen(window.width / 2, window.height / 2);
+        this.target.position.x += Math.random() * 10;
+        this.target.position.y += Math.random() * 10;
     }
 
     honk() {
