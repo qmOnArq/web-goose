@@ -82,6 +82,7 @@ export class Goose {
 
     private windows: WindowsXpWindow[] = [];
 
+    private timeSinceHonkRoll = 0;
     private timeSinceHonk = 0;
     private timeSinceFootstep = 0;
 
@@ -182,6 +183,7 @@ export class Goose {
         this.tryToHonk();
 
         this.timeSinceHonk += delta;
+        this.timeSinceHonkRoll += delta;
         this.body.time += delta;
         this.target.time += delta;
         this.head.time += delta;
@@ -454,10 +456,6 @@ export class Goose {
             y: Math.round(rect.height * Math.random()) + rect.top,
         };
 
-        if (xPadding > 0) {
-            console.log(rect, x, xPadding, yPadding);
-        }
-
         return x;
     }
 
@@ -477,7 +475,20 @@ export class Goose {
     }
 
     tryToHonk() {
-        // TODO!!!
+        const increasePer = 3; // seconds
+        const increaseBy = 0.01; // %
+
+        if (this.timeSinceHonkRoll >= increasePer) {
+            this.timeSinceHonkRoll = 0;
+
+            const increases = Math.floor(this.timeSinceHonk / increasePer);
+            const chance = increaseBy * increases;
+            const random = Math.random();
+
+            if (random >= 1 - chance) {
+                this.honk();
+            }
+        }
     }
 
     doRandomAction() {
