@@ -89,6 +89,10 @@ export class Goose {
 
     private visible = false;
 
+    private get basePadding() {
+        return Math.max(this.canvasWidth * this.scale, this.canvasHeight * this.scale) * 2;
+    }
+
     start(debug = false) {
         windowsInjectStyles();
         footstepInjectStyles();
@@ -146,17 +150,19 @@ export class Goose {
         this.ctx = this.canvas.getContext('2d')!;
         this.ctx.imageSmoothingEnabled = false;
 
+        const startingPosition = this.getRandomPointOutOfScreen(this.basePadding);
+        this.position.x = startingPosition.x;
+        this.position.y = startingPosition.y;
+        this.target.position.x = startingPosition.x;
+        this.target.position.y = startingPosition.y;
+
         this.updateCanvasPosition();
         document.body.appendChild(this.shadow);
         document.body.appendChild(this.canvas);
 
         this.lastUpdateTimestamp = +new Date();
         requestAnimationFrame(() => this.loop());
-
-        // TODO - start and starting position
-        // this.goForPresent();
-        this.target.position.x = 200;
-        this.target.position.y = 200;
+        this.doRandomAction();
     }
 
     private update(delta: number) {
@@ -166,8 +172,7 @@ export class Goose {
 
         if (this.target.action == null) {
             if (this.target.queued.length === 0) {
-                this.stand();
-                // TODO - figure out random action
+                this.doRandomAction();
             } else {
                 const action = this.target.queued[0];
                 this.target.queued = this.target.queued.slice(1);
@@ -175,6 +180,8 @@ export class Goose {
                 this[action.action]();
             }
         }
+
+        this.tryToHonk();
 
         this.timeSinceHonk += delta;
         this.body.time += delta;
@@ -278,16 +285,6 @@ export class Goose {
             this.target.position.x,
             this.target.position.y,
             speed * delta,
-        );
-        this.position.x = Helpers.clamp(
-            this.position.x,
-            -this.canvas.width - 20,
-            document.body.clientWidth + this.canvas.width + 20,
-        );
-        this.position.y = Helpers.clamp(
-            this.position.y,
-            -this.canvas.height - 20,
-            document.body.clientHeight + this.canvas.height + 20,
         );
         this.mirrored = this.target.mirrored
             ? this.position.x < this.target.position.x
@@ -452,13 +449,35 @@ export class Goose {
             throw new Error(NOT_INITIALIZED_MSG);
         }
 
-        const rect = Helpers.getViewportWithPadding(
-            Math.max(this.canvas.width, this.canvas.height) * 2 + additionalPadding,
-        );
+        const rect = Helpers.getViewportWithPadding(this.basePadding + additionalPadding);
         return {
             x: Math.round(rect.width * Math.random()) + rect.left,
             y: Math.round(rect.height * Math.random()) + rect.top,
         };
+    }
+
+    private getRandomPointOutOfScreen(padding = 0) {
+        if (!this.ctx || !this.canvas) {
+            throw new Error(NOT_INITIALIZED_MSG);
+        }
+
+        const viewport = Helpers.getViewportWithPadding();
+
+        return Helpers.randomPointOnRect(
+            viewport.left - padding,
+            viewport.top - padding,
+            viewport.width + 2 * padding,
+            viewport.height + 2 * padding,
+        );
+    }
+
+    tryToHonk() {
+        // TODO!!!
+    }
+
+    doRandomAction() {
+        this.goForPresent();
+        // TODO!!!
     }
 
     followMouse() {
@@ -499,8 +518,8 @@ export class Goose {
             content = type === 'image' ? Helpers.randomItem(MEME_IMAGE_STR) : Helpers.randomItem(MEME_TEXTS).text;
         }
 
-        const x = fromLeft ? -100 : document.body.clientWidth + 100 + document.documentElement.scrollLeft;
-        const y = document.documentElement.scrollTop + 400;
+        const x = fromLeft ? -400 : document.body.clientWidth + 400 + document.documentElement.scrollLeft;
+        const y = document.documentElement.scrollTop + 400 + Math.random() * 100;
 
         const window = createWinXpWindow(type, content, x, y, !fromLeft, false);
         this.windows.push(window);

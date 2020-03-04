@@ -25,6 +25,31 @@ export namespace Helpers {
         return array[Math.floor(Math.random() * array.length)];
     }
 
+    export function randomPointOnRect(x: number, y: number, width: number, height: number) {
+        let p = Math.random() * (width * 2 + height * 2);
+        const result = { x: 0, y: 0 };
+
+        if (p < width + height) {
+            if (p < width) {
+                result.x = p;
+                result.y = y;
+            } else {
+                result.x = width;
+                result.y = p - width;
+            }
+        } else {
+            p = p - (width + height);
+            if (p < width) {
+                result.x = width - p;
+                result.y = height;
+            } else {
+                result.x = x;
+                result.y = height - (p - width);
+            }
+        }
+        return result;
+    }
+
     export function getViewportWithPadding(padding = 0) {
         return {
             top: window.pageYOffset + padding,
