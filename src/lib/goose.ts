@@ -86,7 +86,7 @@ export class Goose {
     private timeSinceHonk = 0;
     private timeSinceFootstep = 0;
 
-    private mousePosition = { x: 0, y: 0 };
+    private mousePosition = { x: 50, y: 50 };
 
     private visible = false;
 
@@ -95,6 +95,7 @@ export class Goose {
         footstepInjectStyles();
         Promise.all([GOOSE_IMAGE_PROMISE, ...MEME_IMAGE_PROMISE]).then(() => {
             this.init(debug);
+            (window as any).GOOSE = this;
         });
     }
 
@@ -161,7 +162,7 @@ export class Goose {
 
         this.lastUpdateTimestamp = +new Date();
         requestAnimationFrame(() => this.loop());
-        this.doRandomAction();
+        this.moveTo();
     }
 
     private update(delta: number) {
@@ -233,7 +234,11 @@ export class Goose {
                 forcedSpeed = 'running';
                 break;
             case 'followMouse':
-                this.target.position = this.mousePosition;
+                this.target.position.x = this.mousePosition.x;
+                this.target.position.y = this.mousePosition.y;
+                if (this.target.time >= this.target.additionalData.waitFor) {
+                    this.clearCurrentAction();
+                }
                 break;
             case 'moveTo':
                 if (distance < 10) {
@@ -451,12 +456,10 @@ export class Goose {
         }
 
         const rect = Helpers.getViewportWithPadding(this.canvas.width + xPadding, this.canvas.height + yPadding);
-        const x = {
+        return {
             x: Math.round(rect.width * Math.random()) + rect.left,
             y: Math.round(rect.height * Math.random()) + rect.top,
         };
-
-        return x;
     }
 
     private getRandomPointOutOfScreen(padding = 0) {
@@ -492,8 +495,23 @@ export class Goose {
     }
 
     doRandomAction() {
-        this.goForPresent();
-        // TODO!!!
+        const windowChance = 0.5 / Math.pow(3, this.windows.length);
+        const windowsRoll = Math.random();
+        if (windowsRoll < windowChance) {
+            this.goForPresent();
+            return;
+        }
+
+        const actions: { action: GooseAction; data?: any }[][] = [
+            ...(this.isGooseOnScreen() ? [[{ action: 'stand' as GooseAction }]] : []),
+            [{ action: 'moveTo' }, { action: 'stand' }],
+            [{ action: 'followMouse' }, { action: 'stand' }],
+        ];
+
+        const singleItemChance = 1 / actions.length;
+        const roll = Math.random();
+        const index = Math.floor(roll / singleItemChance);
+        this.target.queued = [...this.target.queued, ...actions[index]];
     }
 
     followMouse() {
@@ -503,6 +521,7 @@ export class Goose {
 
         this.target.mirrored = false;
         this.target.action = 'followMouse';
+        this.target.additionalData.waitFor = this.target.additionalData.waitFor ?? Math.random() * 3 + 1;
         this.target.time = 0;
         this.head.index = 0;
     }
@@ -529,7 +548,20 @@ export class Goose {
         this.head.index = 0;
 
         fromLeft = fromLeft ?? Math.random() < 0.5;
-        type = type ?? (Math.random() < 0.5 ? 'image' : 'text');
+
+        if (!type) {
+            const imgCount = this.windows.filter(w => w.type === 'image').length;
+            const txtCount = this.windows.filter(w => w.type === 'text').length;
+
+            if (imgCount > txtCount) {
+                type = Math.random() < 0.85 ? 'text' : 'image';
+            } else if (txtCount > imgCount) {
+                type = Math.random() < 0.85 ? 'image' : 'text';
+            } else {
+                type = Math.random() < 0.5 ? 'image' : 'text';
+            }
+        }
+
         if (!content) {
             content = type === 'image' ? Helpers.randomItem(MEME_IMAGE_STR) : Helpers.randomItem(MEME_TEXTS).text;
         }
@@ -538,7 +570,7 @@ export class Goose {
         const y = document.documentElement.scrollTop + 400 + Math.random() * 100;
 
         const window = createWinXpWindow(type, content, x, y, !fromLeft, false);
-        this.windows.push(window);
+        this.windows = [...this.windows, window];
 
         window.closed.then(() => {
             if (this.target.action === 'bringPresent' && this.target.additionalData.window === window) {
@@ -551,6 +583,8 @@ export class Goose {
                     this.target.position.y = this.position.y;
                 }, 200);
             }
+
+            this.windows = this.windows.filter(w => w.id !== window.id);
         });
 
         this.target.position = {
@@ -580,9 +614,9 @@ export class Goose {
         this.target.action = 'bringPresent';
         this.target.time = 0;
         this.head.index = 10;
-        this.target.position = this.getRandomPointOnScreen(window.width / 2, window.height / 2);
-        this.target.position.x += Math.random() * 10;
-        this.target.position.y += Math.random() * 10;
+        this.target.position = this.getRandomPointOnScreen(window.width, window.height / 2);
+        this.target.position.x += -5 + Math.random() * 10;
+        this.target.position.y += -5 + Math.random() * 10;
     }
 
     honk() {
@@ -616,6 +650,8 @@ export class Goose {
         this.target.additionalData.waitFor = this.target.additionalData.waitFor ?? Math.random() * 3 + 1;
         this.target.time = 0;
         this.head.index = 0;
+        this.target.position.x = this.position.x;
+        this.target.position.y = this.position.y;
     }
 
     moveTo(target?: { x: number; y: number }) {
@@ -628,7 +664,15 @@ export class Goose {
         this.target.time = 0;
         this.head.index = 0;
 
-        this.target.position = target ?? this.target.additionalData.target ?? this.getRandomPointOnScreen();
+        if (target) {
+            this.target.position.x = target.x;
+            this.target.position.y = target.y;
+        } else if (this.target.additionalData.target) {
+            this.target.position.x = this.target.additionalData.target.x;
+            this.target.position.y = this.target.additionalData.target.y;
+        } else {
+            this.target.position = this.getRandomPointOnScreen();
+        }
     }
 
     clearCurrentAction() {

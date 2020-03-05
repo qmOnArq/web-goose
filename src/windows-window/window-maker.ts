@@ -10,9 +10,10 @@ export function createWinXpWindow(
 ) {
     const contentHtml = type === 'text' ? `<textarea>${content}</textarea>` : `<img src="${content}">`;
     const title = type === 'text' ? 'Notepad' : 'Image Viewer';
+    const _id = id++;
 
     const html = `
-<div id="__web-goose-xp-window-${id++}__" class="__web-goose-xp-base__ __web-goose-xp-holder__" style="
+<div id="__web-goose-xp-window-${_id}__" class="__web-goose-xp-base__ __web-goose-xp-holder__" style="
     width: 100px;
     left: -1000px;
     top: -1000px;
@@ -107,6 +108,7 @@ export function createWinXpWindow(
         content,
         width: rect.width,
         height: rect.height + 30,
+        id: _id,
     };
 
     return result;
@@ -121,4 +123,5 @@ export interface WindowsXpWindow {
     type: 'image' | 'text';
     content: string;
     closed: Promise<void>;
+    id: number;
 }
