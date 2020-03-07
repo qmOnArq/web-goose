@@ -380,7 +380,7 @@ export class Goose {
             );
         }
 
-        let headIndex = this.flappingWings.is ? 14 : this.head.index;
+        let headIndex = this.flappingWings.is && this.target.action !== 'bringPresent' ? 14 : this.head.index;
         headIndex = this.fastRunning.is ? 6 : headIndex;
         headIndex = this.honking.is ? getHonkHeadForIndex(headIndex) : headIndex;
 
