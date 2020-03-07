@@ -88,7 +88,7 @@ export class Goose {
     private timeSinceWingFlap = 0;
     private timeSinceFootstep = 0;
 
-    private mousePosition = { x: 50, y: 50 };
+    private mousePosition = { x: 100 + 50 * Math.random(), y: 100 + 50 * Math.random() };
 
     private visible = false;
 
