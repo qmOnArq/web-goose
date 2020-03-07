@@ -84,6 +84,8 @@ export class Goose {
 
     private timeSinceHonkRoll = 0;
     private timeSinceHonk = 0;
+    private timeSinceWingFlapRoll = 0;
+    private timeSinceWingFlap = 0;
     private timeSinceFootstep = 0;
 
     private mousePosition = { x: 50, y: 50 };
@@ -182,9 +184,12 @@ export class Goose {
         }
 
         this.tryToHonk();
+        this.tryToWingFlap();
 
         this.timeSinceHonk += delta;
         this.timeSinceHonkRoll += delta;
+        this.timeSinceWingFlap += delta;
+        this.timeSinceWingFlapRoll += delta;
         this.body.time += delta;
         this.target.time += delta;
         this.head.time += delta;
@@ -375,8 +380,8 @@ export class Goose {
             );
         }
 
-        // TODO - headIndex when flapping wings
-        let headIndex = this.fastRunning.is ? 6 : this.head.index;
+        let headIndex = this.flappingWings.is ? 14 : this.head.index;
+        headIndex = this.fastRunning.is ? 6 : headIndex;
         headIndex = this.honking.is ? getHonkHeadForIndex(headIndex) : headIndex;
 
         GooseDrawing.drawGoose(
@@ -492,6 +497,10 @@ export class Goose {
                 this.honk();
             }
         }
+    }
+
+    tryToWingFlap() {
+        // TODO
     }
 
     doRandomAction() {
@@ -638,6 +647,7 @@ export class Goose {
         this.flappingWings.frame = 0;
         this.flappingWings.frameTime = 0;
         this.flappingWings.increasing = true;
+        this.timeSinceWingFlap = 0;
     }
 
     stand() {
