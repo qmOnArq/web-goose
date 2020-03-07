@@ -500,7 +500,20 @@ export class Goose {
     }
 
     tryToWingFlap() {
-        // TODO
+        const increasePer = 6; // seconds
+        const increaseBy = 0.01; // %
+
+        if (this.timeSinceWingFlapRoll >= increasePer) {
+            this.timeSinceWingFlapRoll = 0;
+
+            const increases = Math.floor(this.timeSinceWingFlap / increasePer);
+            const chance = increaseBy * increases;
+            const random = Math.random();
+
+            if (random >= 1 - chance) {
+                this.flapWings();
+            }
+        }
     }
 
     doRandomAction() {
@@ -584,12 +597,12 @@ export class Goose {
         window.closed.then(() => {
             if (this.target.action === 'bringPresent' && this.target.additionalData.window === window) {
                 this.clearCurrentAction();
+                this.stand();
                 setTimeout(() => {
-                    this.stand();
                     this.honk();
                     this.flapWings();
-                    this.target.position.x = this.position.x;
-                    this.target.position.y = this.position.y;
+                    this.target.position.x = this.position.x + 1;
+                    this.target.position.y = this.position.y + 1;
                 }, 200);
             }
 
